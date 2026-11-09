@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de CEP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --papel: #F1EFE6;
+            --papel-escuro: #E7E3D4;
+            --tinta: #1B2B33;
+            --tinta-suave: #5B6B70;
+            --linha: #CBC5B2;
+            --vermelho: #BC3A2B;
+            --azul: #2A4A63;
+            --verde: #3F6B4A;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Mono', monospace;
+            background-color: var(--papel-escuro);
+            color: var(--tinta);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .faixa-aerea {
+            width: 100%;
+            height: 10px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--vermelho) 0px, var(--vermelho) 14px,
+                var(--papel) 14px, var(--papel) 20px,
+                var(--azul) 20px, var(--azul) 34px,
+                var(--papel) 34px, var(--papel) 40px
+            );
+            flex-shrink: 0;
+        }
+
+        .folha {
+            width: 100%;
+            max-width: 640px;
+            background-color: var(--papel);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--linha);
+            border-right: 1px solid var(--linha);
+        }
+
+        header {
+            padding: 48px 40px 32px;
+            border-bottom: 1px solid var(--linha);
+        }
+
+        .marca {
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            color: var(--vermelho);
+            margin-bottom: 18px;
+        }
+
+        .marca::before { content: "["; }
+        .marca::after { content: "]"; }
+
+        header h1 {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 36px;
+            line-height: 1.15;
+            color: var(--tinta);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 13.5px;
+            color: var(--tinta-suave);
+            max-width: 40ch;
+        }
+
+        main {
+            padding: 36px 40px 48px;
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: var(--tinta-suave);
+            margin-bottom: 10px;
+        }
+
+        .campo-busca {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 2px;
+            border: none;
+            border-bottom: 1px solid var(--tinta);
+            background: transparent;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 20px;
+            letter-spacing: 0.02em;
+            color: var(--tinta);
+            outline: none;
+        }
+
+        input::placeholder {
+            color: #B7B0A0;
+        }
+
+        input:focus {
+            border-bottom: 1px solid var(--vermelho);
+        }
+
+        button {
+            padding: 0 26px;
+            border: 1px solid var(--tinta);
+            background-color: var(--tinta);
+            color: var(--papel);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--papel);
+            color: var(--tinta);
+        }
+
+        button:disabled {
+            border-color: var(--linha);
+            background-color: var(--linha);
+            color: var(--tinta-suave);
+            cursor: not-allowed;
+        }
+
+        .mensagem {
+            margin-top: 16px;
+            font-size: 13px;
+        }
+
+    
+        .ticket {
+            margin-top: 34px;
+            border: 1px solid var(--tinta);
+        }
+
+        .ticket-topo {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            padding: 18px 22px;
+            background-color: var(--tinta);
+            color: var(--papel);
+        }
+
+        .ticket-topo span:first-child {
+            font-size: 11px;
+            letter-spacing: 0.03em;
+            color: #C9CDCE;
+        }
+
+        .ticket-cep {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        .ticket-perfuracao {
+            border-top: 1px dashed var(--linha);
+            margin: 0 22px;
+        }
+
+        .foto-cidade {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            display: block;
+            filter: grayscale(15%);
+        }
+
+        .nome-cidade {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 24px;
+            padding: 24px 22px 4px;
+            color: var(--tinta);
+        }
+
+        .lista-dados {
+            padding: 8px 22px 6px;
+        }
+
+        .linha-dado {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 16px;
+            padding: 13px 0;
+            border-bottom: 1px solid var(--linha);
+        }
+
+        .linha-dado:last-child {
+            border-bottom: none;
+        }
+
+        .linha-dado dt {
+            font-size: 12.5px;
+            color: var(--tinta-suave);
+            flex-shrink: 0;
+        }
+
+        .linha-dado dd {
+            font-size: 14.5px;
+            font-weight: 500;
+            color: var(--tinta);
+            text-align: right;
+        }
+
+        .botao-maps {
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            border-top: 1px solid var(--tinta);
+            color: var(--azul);
+            padding: 16px;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: background-color 0.15s ease, color 0.15s ease;
+        }
+
+        .botao-maps:hover {
+            background-color: var(--azul);
+            color: var(--papel);
+        }
+
+        footer {
+            padding: 20px 40px;
+            border-top: 1px solid var(--linha);
+            font-size: 11.5px;
+            color: var(--tinta-suave);
+        }
+
+        @media (max-width: 600px) {
+            header, main, footer {
+                padding-left: 24px;
+                padding-right: 24px;
+            }
+
+            header h1 {
+                font-size: 28px;
+            }
+
+            .campo-busca {
+                flex-direction: column;
+            }
+
+            button {
+                padding: 13px 0;
+            }
+
+            .ticket-topo {
+                flex-direction: column;
+                gap: 6px;
+                align-items: flex-start;
+            }
+
+            .linha-dado {
+                flex-direction: column;
+                gap: 3px;
+            }
+
+            .linha-dado dd {
+                text-align: left;
+            }
+
+            .foto-cidade {
+                height: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="faixa-aerea"></div>
+
+    <div class="folha">
+
+        <header>
+            <div class="marca">CEP · BR</div>
+            <h1>Consulta de CEP</h1>
+            <p>Digite um código postal para encontrar o endereço correspondente.</p>
+        </header>
+
+        <main>
+
+            <form id="formularioCep">
+                <label for="cep">Código postal</label>
+                <div class="campo-busca">
+                    <input
+                        type="text"
+                        id="cep"
+                        placeholder="00000-000"
+                        maxlength="9"
+                        autocomplete="postal-code"
+                    >
+                    <button type="submit" id="botaoBuscar">Buscar</button>
+                </div>
+            </form>
+
+            <p id="mensagem" class="mensagem"></p>
+
+            <section id="resultado" class="ticket" hidden>
+
+                <div class="ticket-topo">
+                    <span>Código postal</span>
+                    <span id="resultadoCep" class="ticket-cep"></span>
+                </div>
+
+                <div class="ticket-perfuracao"></div>
+
+                <img
+                    id="fotoCidade"
+                    class="foto-cidade"
+                    src=""
+                    alt="Imagem da cidade"
+                    hidden
+                >
+
+                <h3 id="nomeCidade" class="nome-cidade"></h3>
+
+                <dl class="lista-dados">
+                    <div class="linha-dado">
+                        <dt>Logradouro</dt>
+                        <dd id="logradouro"></dd>
+                    </div>
+                    <div class="linha-dado">
+                        <dt>Bairro</dt>
+                        <dd id="bairro"></dd>
+                    </div>
+                    <div class="linha-dado">
+                        <dt>Cidade</dt>
+                        <dd id="cidade"></dd>
+                    </div>
+                    <div class="linha-dado">
+                        <dt>Estado</dt>
+                        <dd id="estado"></dd>
+                    </div>
+                    <div class="linha-dado">
+                        <dt>DDD</dt>
+                        <dd id="ddd"></dd>
+                    </div>
+                </dl>
+
+                <a
+                    id="botaoMaps"
+                    class="botao-maps"
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Ver no mapa
+                </a>
+
+            </section>
+
+        </main>
+
+        <footer>
+            Projeto de consumo de API pública — ViaCEP
+        </footer>
+
+    </div>
+
+    <script>
+        // elementos usados no script
+        const formulario = document.getElementById("formularioCep");
+        const campoCep = document.getElementById("cep");
+        const botaoBuscar = document.getElementById("botaoBuscar");
+        const mensagem = document.getElementById("mensagem");
+        const resultado = document.getElementById("resultado");
+        const fotoCidade = document.getElementById("fotoCidade");
+        const nomeCidade = document.getElementById("nomeCidade");
+
+        formulario.addEventListener("submit", async function (evento) {
+            evento.preventDefault(); // evita recarregar a página ao enviar o form
+
+            const cep = campoCep.value.trim();
+            const cepNumeros = cep.replace(/\D/g, ""); // deixa só números
+
+            // CEP brasileiro tem  sempre so 8 dígitos
+            if (cepNumeros.length !== 8) {
+                mensagem.textContent = "Digite um CEP válido com 8 números.";
+                mensagem.style.color = "#BC3A2B";
+                resultado.hidden = true;
+                return;
+            }
+
+            // trava o botão e mostra o Buscando... pra evitar varios cliques 
+            botaoBuscar.disabled = true;
+            botaoBuscar.textContent = "Buscando...";
+            mensagem.textContent = "Buscando...";
+            mensagem.style.color = "#5B6B70";
+            resultado.hidden = true;
+
+            try {
+                const resposta = await fetch(
+                    `https://viacep.com.br/ws/${cepNumeros}/json/`
+                );
+
+                if (!resposta.ok) {
+                    throw new Error("Erro ao consultar a API.");
+                }
+
+                const dados = await resposta.json();
+
+                // viacep retorna erro: true quando o CEP não existe
+                if (dados.erro) {
+                    mensagem.textContent = "CEP não encontrado.";
+                    mensagem.style.color = "#BC3A2B";
+                    resultado.hidden = true;
+                    return;
+                }
+
+                // preenche os campos do endereço
+                document.getElementById("resultadoCep").textContent =
+                    dados.cep || "Não informado";
+
+                document.getElementById("logradouro").textContent =
+                    dados.logradouro || "Não informado";
+
+                document.getElementById("bairro").textContent =
+                    dados.bairro || "Não informado";
+
+                document.getElementById("cidade").textContent =
+                    dados.localidade || "Não informado";
+
+                document.getElementById("estado").textContent =
+                    dados.uf || "Não informado";
+
+                document.getElementById("ddd").textContent =
+                    dados.ddd || "Não informado";
+
+                nomeCidade.textContent = dados.localidade;
+                fotoCidade.hidden = true;
+
+                // busca uma foto do lugar qundo dá
+                try {
+                    const cidade = encodeURIComponent(dados.localidade);
+                    const estado = encodeURIComponent(dados.uf);
+
+                    const respostaImagem = await fetch(
+                        `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${cidade}%20${estado}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json&origin=*`
+                    );
+
+                    const dadosImagem = await respostaImagem.json();
+
+                    if (dadosImagem.query && dadosImagem.query.pages) {
+                        const paginas = Object.values(
+                            dadosImagem.query.pages
+                        );
+
+                        if (
+                            paginas.length > 0 &&
+                            paginas[0].imageinfo
+                        ) {
+                            const urlImagem =
+                                paginas[0].imageinfo[0].url;
+
+                            fotoCidade.src = urlImagem;
+                            fotoCidade.alt =
+                                `Imagem de ${dados.localidade}`;
+
+                            fotoCidade.hidden = false;
+                        }
+                    }
+
+                } catch (erroImagem) {
+                    // se a foto falhar, só não mostra a imagem
+                    fotoCidade.hidden = true;
+                }
+
+                //  link do Google Maps com o endereço encontrado
+                const endereco = [
+                    dados.logradouro,
+                    dados.bairro,
+                    dados.localidade,
+                    dados.uf
+                ]
+                    .filter(Boolean)
+                    .join(", ");
+
+                const enderecoMaps =
+                    encodeURIComponent(endereco);
+
+                document.getElementById("botaoMaps").href =
+                    `https://www.google.com/maps/search/?api=1&query=${enderecoMaps}`;
+
+                resultado.hidden = false;
+
+                mensagem.textContent =
+                    "CEP encontrado com sucesso!";
+
+                mensagem.style.color = "#3F6B4A";
+
+            } catch (erro) {
+                // erro de rede ou falha inesperada na requisição
+                mensagem.textContent =
+                    "Não foi possível consultar o CEP. Verifique sua conexão e tente novamente.";
+
+                mensagem.style.color = "#BC3A2B";
+                resultado.hidden = true;
+
+            } finally {
+                // roda sempre com sucesso ou erro para liberando o botão de novo
+                botaoBuscar.disabled = false;
+                botaoBuscar.textContent = "Buscar";
+            }
+        });
+    </script>
+
+</body>
+</html>
